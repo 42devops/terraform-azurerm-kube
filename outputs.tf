@@ -1,6 +1,6 @@
 output "kube_masters_lb_private_ip" {
   description = "private ip addresses of Load Balancer in front of kubernetes master nodes"
-  value       = "${azurerm_lb.k8s_lb.*.private_ip_address}"
+  value       = "${azurerm_lb.kubernetes_lb.*.private_ip_address}"
 }
 
 output "kube_masters_private_ip" {

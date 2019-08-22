@@ -75,6 +75,10 @@ variable "kube_minion_size" {
   description = "Specifies the size of the Virtual Machine that running Kubernetes minion nodes."
 }
 
+variable "ssh_key" {
+  description = "The public key to be used for ssh access to the VM."
+}
+
 variable "tags" {
   type        = "map"
   description = "A map of the tags to use on the resources that are deployed with this module."

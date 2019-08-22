@@ -79,13 +79,13 @@ resource "azurerm_virtual_machine" "kubernetes_master" {
   }
 
   storage_data_disk {
-    name                 = format("%s%02d-data-disk", var.hostname_prefix, count.index + 1)
-    caching              = "None"
-    create_option        = "Attach"
-    disk_size_gb         = var.kube_master_disk_size
-    storage_account_type = var.kube_master_ssd_enabled ? "Premium_LRS" : "Standard_LRS"
-    managed_disk_id      = element(azurerm_managed_disk.kubernetes_master_managed_disk.*.id, count.index)
-    lun                  = 0
+    name              = format("%s%02d-data-disk", var.hostname_prefix, count.index + 1)
+    caching           = "None"
+    create_option     = "Attach"
+    disk_size_gb      = var.kube_master_disk_size
+    managed_disk_type = var.kube_master_ssd_enabled ? "Premium_LRS" : "Standard_LRS"
+    managed_disk_id   = element(azurerm_managed_disk.kubernetes_master_managed_disk.*.id, count.index)
+    lun               = 0
   }
 
   os_profile {
@@ -98,14 +98,9 @@ resource "azurerm_virtual_machine" "kubernetes_master" {
     disable_password_authentication = false
 
     ssh_keys {
-      path     = "/home/${var.admin_username}/.ssh/authorized_keys"
-      key_data = file("./data/ssh_key")
+      path     = format("/home/%s/.ssh/authorized_keys", var.admin_username)
+      key_data = var.ssh_key
     }
-  }
-
-  boot_diagnostics {
-    enabled     = true
-    storage_uri = var.diagnostics_uri
   }
 
   tags = merge(var.tags, { "roles" = "etcd,kube-master" })
@@ -149,13 +144,13 @@ resource "azurerm_virtual_machine" "kubernetes_minion" {
   }
 
   storage_data_disk {
-    name                 = format("%s%02d-data-disk", var.hostname_prefix, count.index + var.kube_master_count + 1)
-    caching              = "None"
-    create_option        = "Attach"
-    disk_size_gb         = var.kube_minion_disk_size
-    storage_account_type = var.kube_minion_ssd_enabled ? "Premium_LRS" : "Standard_LRS"
-    managed_disk_id      = element(azurerm_managed_disk.kubernetes_minion_managed_disk.*.id, count.index)
-    lun                  = 0
+    name              = format("%s%02d-data-disk", var.hostname_prefix, count.index + var.kube_master_count + 1)
+    caching           = "None"
+    create_option     = "Attach"
+    disk_size_gb      = var.kube_minion_disk_size
+    managed_disk_type = var.kube_minion_ssd_enabled ? "Premium_LRS" : "Standard_LRS"
+    managed_disk_id   = element(azurerm_managed_disk.kubernetes_minion_managed_disk.*.id, count.index)
+    lun               = 0
   }
 
   os_profile {
@@ -168,14 +163,9 @@ resource "azurerm_virtual_machine" "kubernetes_minion" {
     disable_password_authentication = false
 
     ssh_keys {
-      path     = "/home/${var.admin_username}/.ssh/authorized_keys"
-      key_data = file("./data/ssh_key")
+      path     = format("/home/%s/.ssh/authorized_keys", var.admin_username)
+      key_data = var.ssh_key
     }
-  }
-
-  boot_diagnostics {
-    enabled     = true
-    storage_uri = var.diagnostics_uri
   }
 
   tags = merge(var.tags, { "roles" = "kube-minion" })
@@ -184,7 +174,7 @@ resource "azurerm_virtual_machine" "kubernetes_minion" {
 # Azure Load Balancer
 
 resource "azurerm_lb" "kubernetes_lb" {
-  count               = var.kube_master_lb_enabled
+  count               = var.kube_master_lb_enabled ? 1 : 0
   name                = var.kube_master_lb_name
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -199,14 +189,14 @@ resource "azurerm_lb" "kubernetes_lb" {
 }
 
 resource "azurerm_lb_backend_address_pool" "kubernetes_lb_backend" {
-  count               = var.kube_master_lb_enabled
+  count               = var.kube_master_lb_enabled ? 1 : 0
   name                = format("%s-backend", var.kube_master_lb_name)
   resource_group_name = var.resource_group_name
   loadbalancer_id     = element(azurerm_lb.kubernetes_lb.*.id, count.index)
 }
 
 resource "azurerm_lb_probe" "kubernetes_lb_http_probe" {
-  count               = var.kube_master_lb_enabled
+  count               = var.kube_master_lb_enabled ? 1 : 0
   name                = format("%s-http-probe", var.kube_master_lb_name)
   resource_group_name = var.resource_group_name
   loadbalancer_id     = element(azurerm_lb.kubernetes_lb.*.id, count.index)
@@ -217,7 +207,7 @@ resource "azurerm_lb_probe" "kubernetes_lb_http_probe" {
 }
 
 resource "azurerm_lb_rule" "kubernetes_lb_rule_with_http_probe" {
-  count                          = var.kube_master_lb_enabled
+  count                          = var.kube_master_lb_enabled ? 1 : 0
   name                           = format("%s-rule", var.kube_master_lb_name)
   resource_group_name            = var.resource_group_name
   loadbalancer_id                = element(azurerm_lb.kubernetes_lb.*.id, count.index)

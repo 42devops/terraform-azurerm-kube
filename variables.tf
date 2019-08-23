@@ -18,7 +18,7 @@ variable "hostname_prefix" {
 
 variable "admin_username" {
   description = "Specifies the name of the local administrator account."
-  default     = "twdevops"
+  default     = "azureuser"
 }
 
 variable "admin_password" {

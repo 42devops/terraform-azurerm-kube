@@ -1,5 +1,11 @@
-provider "azurerm" {
-  version = ">=1.25.0"
+terraform {
+  required_version = ">= 0.12"
+  required_providers {
+    azurerm = {
+      version = ">=1.25.0, < 2"
+      source  = "hashicorp/azurerm"
+    }
+  }
 }
 
 resource "azurerm_availability_set" "k8s_master_as" {
